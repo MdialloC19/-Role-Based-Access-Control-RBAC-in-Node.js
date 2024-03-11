@@ -1,0 +1,4 @@
+{
+    "connectionString": "mongodb+srv://moussadiallo:MdialloC19@cluster0.y2hyn2p.mongodb.net/rbac?retryWrites=true&w=majority&appName=Cluster0",
+    "secret": "RBACTOKEN"
+  }
