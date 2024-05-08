@@ -1,82 +1,171 @@
-const jwt = require("jsonwebtoken");
+const User = require("../models/User");
+const { HttpError } = require("../utils/exceptions");
+const integretyTester = require("../utils/integrety.utils");
+const { validationResult } = require("express-validator");
 const bcrypt = require("bcryptjs");
-const config = require("../config.json");
-const db = require("../helpers/db");
-const User = db.User;
 
-//this will authenticate the user credentials
-async function authenticate({ email, password }) {
-  //find the user using email
+class UserService {
+  /**
+   * Valide les données de l'utilisateur avant de créer un nouvel utilisateur.
+   * @param {Object} userData - Données de l'utilisateur à valider.
+   * @returns {Object} - Données de l'utilisateur validées.
+   * @throws {HttpError} - Lance une erreur HTTP personnalisée si la validation échoue.
+   */
+  static async validateUserData(userData) {
+    const errors = validationResult(userData);
+    if (!errors.isEmpty()) {
+      throw new HttpError(400, "Tester");
+    }
 
-  const user = await User.findOne({ email });
-  console.log("user model", user);
-  //if user is truthy then sign the token
-  if (user && bcrypt.compareSync(password, user.password)) {
-    const token = jwt.sign({ sub: user.id, role: user.role }, config.secret, {
-      expiresIn: "7d",
-    });
-    // console.log("user.toJsoon", ...user.toJSON());
-    return { ...user.toJSON(), token };
+    const {
+      firstname,
+      lastname,
+      dateofbirth,
+      placeofbirth,
+      nationality,
+      address,
+      sexe,
+      email,
+      password,
+      role,
+      phone,
+      isDeleted = false,
+      ...rest // Capture tous les champs supplémentaires non destructurés explicitement
+    } = userData;
+
+    // Objet des champs validés
+    const validatedUserData = {};
+
+    // Vérifications de base
+    if (!firstname || typeof firstname !== "string") {
+      throw new HttpError(
+        400,
+        "Le prénom est requis et doit être une chaîne de caractères."
+      );
+    }
+    validatedUserData.firstname = firstname;
+
+    if (!lastname || typeof lastname !== "string") {
+      throw new HttpError(
+        400,
+        "Le nom de famille est requis et doit être une chaîne de caractères."
+      );
+    }
+    validatedUserData.lastname = lastname;
+
+    if (!new Date(dateofbirth)) {
+      throw new HttpError(400, "Date de naissance invalide.");
+    }
+    validatedUserData.dateofbirth = new Date(dateofbirth);
+
+    if (!placeofbirth || typeof placeofbirth !== "string") {
+      throw new HttpError(
+        400,
+        "Le lieu de naissance est requis et doit être une chaîne de caractères."
+      );
+    }
+    validatedUserData.placeofbirth = placeofbirth;
+
+    if (!nationality || typeof nationality !== "string") {
+      throw new HttpError(
+        400,
+        "La nationalité est requise et doit être une chaîne de caractères."
+      );
+    }
+    validatedUserData.nationality = nationality;
+
+    if (!address || typeof address !== "string") {
+      throw new HttpError(
+        400,
+        "L'adresse est requise et doit être une chaîne de caractères."
+      );
+    }
+    validatedUserData.address = address;
+
+    if (!sexe || !["M", "F"].includes(sexe)) {
+      throw new HttpError(
+        400,
+        "Le sexe doit être 'M' (Masculin) ou 'F' (Féminin)."
+      );
+    }
+    validatedUserData.sexe = sexe;
+
+    if (!integretyTester.isEmail(email)) {
+      throw new HttpError(400, "Format d'email invalide.");
+    }
+    validatedUserData.email = email;
+
+    if (!password || typeof password !== "string" || password.length < 6) {
+      throw new HttpError(
+        400,
+        "Le mot de passe est requis et doit comporter au moins 6 caractères."
+      );
+    } else {
+      // Hash du mot de passe
+      const salt = await bcrypt.genSalt(10);
+      const cryptPassword = await bcrypt.hash(password, salt);
+      validatedUserData.password = cryptPassword;
+    }
+
+    if (
+      role &&
+      !["STUDENT", "TEACHER", "ADMIN", "SUPERADMIN"].includes(
+        role.toUpperCase()
+      )
+    ) {
+      throw new HttpError(400, "Rôle utilisateur invalide.");
+    }
+
+    validatedUserData.role = role;
+
+    if (!phone || typeof phone !== "string") {
+      throw new HttpError(
+        400,
+        "Le numéro de téléphone est requis et doit être un nombre."
+      );
+    }
+    validatedUserData.phone = phone;
+
+    // Vérifie s'il y a des champs supplémentaires qui n'ont pas été validés explicitement
+    if (Object.keys(rest).length > 0) {
+      throw new HttpError(400, "Champs supplémentaires invalides.");
+    }
+
+    return validatedUserData;
   }
-}
-//retrieving all users
-async function getAll() {
-  return await User.find();
-}
-//retrieving user using id
-async function getById(id) {
-  console.log("finding id: ", id);
-  return await User.findById(id);
-}
 
-//adding user to db
-async function create(userParam) {
-  //check if user exist
-  const user = await User.findOne({ email: userParam.email });
-  //validate
-  if (user) throw `This email already exists: ${userParam.email}`;
+  /**
+   * Crée un nouvel utilisateur.
+   * @param {Object} userData - Données pour le nouvel utilisateur.
+   * @returns {Promise<Object>} - Promesse résolue avec l'utilisateur créé.
+   * @throws {HttpError} - Lance une erreur HTTP personnalisée si la création de l'utilisateur échoue.
+   */
+  static async createUser(userData) {
+    try {
+      // Valider les données de l'utilisateur
+      const validatedUserData = await UserService.validateUserData(userData);
 
-  //create user obj
-  const newUser = new User(userParam);
-  if (userParam.password) {
-    newUser.password = bcrypt.hashSync(userParam.password, 10);
+      // Créer un nouvel utilisateur en utilisant le modèle Mongoose
+      const user = await User.create(validatedUserData);
+
+      return user;
+    } catch (error) {
+      console.error(error);
+      if (error instanceof HttpError) {
+        throw error; // Renvoie l'erreur HTTP personnalisée
+      } else if (error.name === "ValidationError") {
+        throw new HttpError(400, error.message);
+      } else if (error.name === "MongoServerError" && error.code === 11000) {
+        throw new HttpError(400, "L'email existe déjà.");
+      } else if (error.name === "CastError") {
+        throw new HttpError(400, "ID invalide.");
+      } else {
+        throw new HttpError(500, "Erreur interne du serveur."); // Par défaut, renvoie 500 pour les erreurs inattendues
+      }
+    }
   }
 
-  await newUser.save();
+  // Méthodes supplémentaires pour la mise à jour, la suppression et la récupération des utilisateurs...
 }
 
-async function update(id, userParam) {
-  console.log(id, userParam);
-  const user = await User.findById(id);
-  console.log(user.email, userParam.email);
-  //validate the id and email
-  if (!user) throw "User not found.";
-  if (
-    user.email !== userParam.email &&
-    (await User.findOne({ email: userParam.email }))
-  ) {
-    throw `User with email ${userParam.email} already exist.`;
-  }
-
-  //convert the password ot hash
-  if (userParam.password) {
-    userParam.password = bcrypt.hashSync(userParam.password, 10);
-  }
-
-  //copy the user obj
-  Object.assign(user, userParam);
-  await user.save();
-}
-
-async function _delete(id) {
-  await User.findByIdAndRemove(id);
-}
-
-module.exports = {
-  authenticate,
-  getAll,
-  getById,
-  create,
-  update,
-  delete: _delete,
-};
+module.exports = UserService;

@@ -1,3 +1,8 @@
+# Ignore le fichier .env
 .env
+
+# Ignore le fichier .config.json
 .config.json
-nodemon
+
+# Ignore le répertoire node_modules
+node_modules/
