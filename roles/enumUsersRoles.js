@@ -1,11 +1,9 @@
-exports.userRole = {
-  SUPERADMIN: "superadmin",
+const enumUsersRoles = {
+  STUDENT: "student",
+  TEACHER: "teacher",
   ADMIN: "admin",
   EDITOR: "editor",
-  STUDENT: "student",
+  SUPERADMIN: "superadmin",
 };
 
-exports.userType = {
-  CEE: "cee",
-  COUD: "coud",
-};
+module.exports = enumUsersRoles;

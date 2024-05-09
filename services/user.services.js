@@ -3,7 +3,27 @@ const { HttpError } = require("../utils/exceptions");
 const integretyTester = require("../utils/integrety.utils");
 const { validationResult } = require("express-validator");
 const bcrypt = require("bcryptjs");
+const {
+  transporter,
+  otpData,
+  tokenData,
+  generateOTP,
+  generateSecretEmail,
+  generateSecretResetEmail,
+  generateEmailOptions,
+  sendVerificationEmail,
+} = require("../mail/email");
 
+/**
+ * Hasher un secret (probablement un mot de passe) avec bcrypt
+ * @async
+ * @function
+ * @param {string} secret - Le secret à hacher
+ * @returns {Promise<string>} - Le secret haché
+ */
+async function hashSecret(secret) {
+  return bcrypt.hash(secret, 10);
+}
 class UserService {
   /**
    * Valide les données de l'utilisateur avant de créer un nouvel utilisateur.
@@ -146,8 +166,15 @@ class UserService {
       const validatedUserData = await UserService.validateUserData(userData);
 
       // Créer un nouvel utilisateur en utilisant le modèle Mongoose
-      const user = await User.create(validatedUserData);
 
+      const secret = generateOTP();
+      const hashedSecret = await hashSecret(secret);
+      validatedUserData.secret = hashedSecret;
+      const user = await User.create(validatedUserData);
+      const emailOptions = generateSecretEmail(user, secret);
+      await sendVerificationEmail(emailOptions);
+
+      return res.json({ code: 200, user });
       return user;
     } catch (error) {
       console.error(error);
