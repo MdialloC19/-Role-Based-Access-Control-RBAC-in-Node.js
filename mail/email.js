@@ -5,7 +5,8 @@
 
 const nodemailer = require("nodemailer");
 const crypto = require("crypto");
-
+const dotenv = require("dotenv");
+dotenv.config();
 // Configuration des variables d'environnement
 const { EMAIL, EMAIL_PASS, REMOTE_CLIENT } = process.env;
 
@@ -19,6 +20,9 @@ const { EMAIL, EMAIL_PASS, REMOTE_CLIENT } = process.env;
  */
 const transporter = nodemailer.createTransport({
   service: "gmail",
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true,
   auth: {
     user: EMAIL,
     pass: EMAIL_PASS,

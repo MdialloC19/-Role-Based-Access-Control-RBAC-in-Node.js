@@ -43,6 +43,60 @@ const userLoginUser = async (req, res) => {
   }
 };
 
+/**
+ * Réinitialiser le secret (mot de passe) d'un utilisateur
+ * @async
+ * @function
+ * @param {object} req - La requête HTTP
+ * @param {object} res - La réponse HTTP
+ * @param {function} next - La fonction de middleware suivante
+ * @returns {Promise<object>} - L'utilisateur avec le secret réinitialisé
+ */
+const resetSecret = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      throw createValidationError(
+        "User",
+        "Veuillez fournir l'identifiant de l'utilisateur."
+      );
+    }
+    const user = await User.findById(id);
+    if (!user) {
+      throw createNotFoundError("User", `Utilisateur introuvable`);
+    }
+
+    if (userRole.STUDENT !== user.role) {
+      throw createNotFoundError(
+        "User",
+        "Le rôle de l'utilisateur n'est pas connu."
+      );
+    }
+
+    if (res.locals.loggedInUser.role !== userRole.ADMIN) {
+      throw createNotFoundError(
+        "User",
+        "Vous n'êtes pas autorisé à réinitialiser le secret."
+      );
+    }
+
+    const secret = generateOTP();
+    const hashedSecret = await hashSecret(secret);
+
+    const updatedUser = await User.findByIdAndUpdate(
+      user._id,
+      { secret: hashedSecret },
+      { new: true }
+    );
+    const emailOptions = generateSecretResetEmail(updatedUser, secret);
+    await sendVerificationEmail(emailOptions);
+
+    return res.json({ code: 200, user });
+  } catch (e) {
+    next(e);
+  }
+};
+
 module.exports = {
   userRegisterUser,
   userLoginUser,

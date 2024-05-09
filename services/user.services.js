@@ -3,6 +3,8 @@ const { HttpError } = require("../utils/exceptions");
 const integretyTester = require("../utils/integrety.utils");
 const { validationResult } = require("express-validator");
 const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+
 const {
   transporter,
   otpData,
@@ -160,6 +162,7 @@ class UserService {
    * @returns {Promise<Object>} - Promesse résolue avec l'utilisateur créé.
    * @throws {HttpError} - Lance une erreur HTTP personnalisée si la création de l'utilisateur échoue.
    */
+
   static async createUser(userData) {
     try {
       // Valider les données de l'utilisateur
@@ -174,7 +177,6 @@ class UserService {
       const emailOptions = generateSecretEmail(user, secret);
       await sendVerificationEmail(emailOptions);
 
-      return res.json({ code: 200, user });
       return user;
     } catch (error) {
       console.error(error);
@@ -191,8 +193,56 @@ class UserService {
       }
     }
   }
+  /**
+   * Connecte un utilisateur existant.
+   * @param {Object} Userdata - Les données de l'utilisateur à connecter.
+   * @returns {Object} - Un objet contenant le token généré et un message de succès.
+   * @throws {HttpError} - Une erreur HTTP avec le code d'erreur approprié.
+   */
+  static async loginUser(Userdata) {
+    try {
+      const { email, password } = Userdata;
 
-  // Méthodes supplémentaires pour la mise à jour, la suppression et la récupération des utilisateurs...
+      // Vérification si l'utilisateur existe
+      let user = await User.findOne({ email });
+      if (!user) {
+        throw new HttpError(null, 400, "Identifiants invalides");
+      }
+
+      // Vérification du mot de passe
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) {
+        throw new HttpError(null, 400, "Identifiants invalides");
+      }
+
+      // Création du token JWT
+      const payload = {
+        user: {
+          id: user.id,
+          username: user.username,
+          role: user.role,
+        },
+      };
+
+      let token;
+      try {
+        token = jwt.sign(payload, process.env.jwtSecret, {
+          expiresIn: process.env.jwtExpiresIn,
+        });
+      } catch (error) {
+        throw new HttpError(error, 500, "Échec de la génération du token.");
+      }
+
+      return {
+        token,
+        success: true,
+        message: "Authentifié",
+      };
+    } catch (error) {
+      if (error instanceof HttpError) throw error;
+      throw new HttpError(error, 500, "Erreur du serveur");
+    }
+  }
 }
 
 module.exports = UserService;

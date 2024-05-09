@@ -62,6 +62,10 @@ const UserSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  secret: {
+    type: String,
+    required: false,
+  },
   isDeleted: {
     type: Boolean,
     default: false,
