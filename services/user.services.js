@@ -16,23 +16,11 @@ const {
   sendVerificationEmail,
 } = require("../mail/email");
 
-/**
- * Hasher un secret (probablement un mot de passe) avec bcrypt
- * @async
- * @function
- * @param {string} secret - Le secret à hacher
- * @returns {Promise<string>} - Le secret haché
- */
 async function hashSecret(secret) {
   return bcrypt.hash(secret, 10);
 }
+
 class UserService {
-  /**
-   * Valide les données de l'utilisateur avant de créer un nouvel utilisateur.
-   * @param {Object} userData - Données de l'utilisateur à valider.
-   * @returns {Object} - Données de l'utilisateur validées.
-   * @throws {HttpError} - Lance une erreur HTTP personnalisée si la validation échoue.
-   */
   static async validateUserData(userData) {
     const errors = validationResult(userData);
     if (!errors.isEmpty()) {
@@ -51,14 +39,13 @@ class UserService {
       password,
       role,
       phone,
+      compte,
       isDeleted = false,
-      ...rest // Capture tous les champs supplémentaires non destructurés explicitement
+      ...rest
     } = userData;
 
-    // Objet des champs validés
     const validatedUserData = {};
 
-    // Vérifications de base
     if (!firstname || typeof firstname !== "string") {
       throw new HttpError(
         400,
@@ -123,7 +110,6 @@ class UserService {
         "Le mot de passe est requis et doit comporter au moins 6 caractères."
       );
     } else {
-      // Hash du mot de passe
       const salt = await bcrypt.genSalt(10);
       const cryptPassword = await bcrypt.hash(password, salt);
       validatedUserData.password = cryptPassword;
@@ -148,7 +134,6 @@ class UserService {
     }
     validatedUserData.phone = phone;
 
-    // Vérifie s'il y a des champs supplémentaires qui n'ont pas été validés explicitement
     if (Object.keys(rest).length > 0) {
       throw new HttpError(400, "Champs supplémentaires invalides.");
     }
@@ -156,66 +141,46 @@ class UserService {
     return validatedUserData;
   }
 
-  /**
-   * Crée un nouvel utilisateur.
-   * @param {Object} userData - Données pour le nouvel utilisateur.
-   * @returns {Promise<Object>} - Promesse résolue avec l'utilisateur créé.
-   * @throws {HttpError} - Lance une erreur HTTP personnalisée si la création de l'utilisateur échoue.
-   */
-
   static async createUser(userData) {
     try {
-      // Valider les données de l'utilisateur
       const validatedUserData = await UserService.validateUserData(userData);
-
-      // Créer un nouvel utilisateur en utilisant le modèle Mongoose
-
       const secret = generateOTP();
       const hashedSecret = await hashSecret(secret);
       validatedUserData.secret = hashedSecret;
       const user = await User.create(validatedUserData);
       const emailOptions = generateSecretEmail(user, secret);
       await sendVerificationEmail(emailOptions);
-
       return user;
     } catch (error) {
       console.error(error);
       if (error instanceof HttpError) {
-        throw error; // Renvoie l'erreur HTTP personnalisée
+        throw error;
       } else if (error.name === "ValidationError") {
-        throw new HttpError(400, error.message);
+        throw new HttpError(error, 400, error.message);
       } else if (error.name === "MongoServerError" && error.code === 11000) {
-        throw new HttpError(400, "L'email existe déjà.");
+        throw new HttpError(error, 400, "L'email existe déjà.");
       } else if (error.name === "CastError") {
-        throw new HttpError(400, "ID invalide.");
+        throw new HttpError(error, 400, "ID invalide.");
       } else {
-        throw new HttpError(500, "Erreur interne du serveur."); // Par défaut, renvoie 500 pour les erreurs inattendues
+        throw new HttpError(error, 500, "Erreur interne du serveur.");
       }
     }
   }
-  /**
-   * Connecte un utilisateur existant.
-   * @param {Object} Userdata - Les données de l'utilisateur à connecter.
-   * @returns {Object} - Un objet contenant le token généré et un message de succès.
-   * @throws {HttpError} - Une erreur HTTP avec le code d'erreur approprié.
-   */
+
   static async loginUser(Userdata) {
     try {
       const { email, password } = Userdata;
 
-      // Vérification si l'utilisateur existe
       let user = await User.findOne({ email });
       if (!user) {
         throw new HttpError(null, 400, "Identifiants invalides");
       }
 
-      // Vérification du mot de passe
       const isMatch = await bcrypt.compare(password, user.password);
       if (!isMatch) {
         throw new HttpError(null, 400, "Identifiants invalides");
       }
 
-      // Création du token JWT
       const payload = {
         user: {
           id: user.id,
@@ -226,8 +191,8 @@ class UserService {
 
       let token;
       try {
-        token = jwt.sign(payload, process.env.jwtSecret, {
-          expiresIn: process.env.jwtExpiresIn,
+        token = jwt.sign(payload, process.env.JWT_SECRET, {
+          expiresIn: process.env.JWT_EXPIRES_IN,
         });
       } catch (error) {
         throw new HttpError(error, 500, "Échec de la génération du token.");
@@ -241,6 +206,143 @@ class UserService {
     } catch (error) {
       if (error instanceof HttpError) throw error;
       throw new HttpError(error, 500, "Erreur du serveur");
+    }
+  }
+
+  /**
+   * Met à jour un utilisateur existant par ID.
+   * @param {string} userId - ID de l'utilisateur à mettre à jour.
+   * @param {Object} updatedUserData - Données mises à jour pour l'utilisateur.
+   * @returns {Promise<Object>} - Promesse résolue avec l'utilisateur mis à jour.
+   * @throws {HttpError} - Lance une erreur HTTP personnalisée si la mise à jour de l'utilisateur échoue.
+   */
+  static async updateUserById(userId, updatedUserData) {
+    try {
+      // Valider les données de l'utilisateur mises à jour
+      const validatedUserData = UserService.validateUserData(updatedUserData);
+
+      // Mettre à jour l'utilisateur en utilisant le modèle Mongoose
+      const user = await User.findByIdAndUpdate(userId, validatedUserData, {
+        new: true,
+      });
+
+      if (!user) {
+        throw new HttpError(null, 404, "Utilisateur introuvable.");
+      }
+
+      return user;
+    } catch (error) {
+      if (error instanceof HttpError) {
+        throw error; // Renvoie l'erreur HTTP personnalisée
+      } else {
+        throw new HttpError(error, 500, "Erreur interne du serveur."); // Par défaut, renvoie 500 pour les erreurs inattendues
+      }
+    }
+  }
+
+  static async updateUserByEmail(userEmail, updatedUserData) {
+    try {
+      // Mettre à jour l'utilisateur en utilisant le modèle Mongoose
+      const user = await User.findOneAndUpdate(
+        { email: userEmail },
+        updatedUserData,
+        {
+          new: true,
+        }
+      );
+
+      if (!user) {
+        throw new HttpError(null, 404, "Utilisateur introuvable.");
+      }
+
+      return user;
+    } catch (error) {
+      if (error instanceof HttpError) {
+        throw error; // Renvoie l'erreur HTTP personnalisée
+      } else {
+        throw new HttpError(error, 500, "Erreur interne du serveur."); // Par défaut, renvoie 500 pour les erreurs inattendues
+      }
+    }
+  }
+
+  /**
+   * Supprime un utilisateur existant par ID.
+   * @param {string} userId - ID de l'utilisateur à supprimer.
+   * @returns {Promise<Object>} - Promesse résolue avec l'utilisateur supprimé.
+   * @throws {HttpError} - Lance une erreur HTTP personnalisée si la suppression de l'utilisateur échoue.
+   */
+  static async deleteUser(userId) {
+    try {
+      // Trouve et supprime l'utilisateur en utilisant le modèle Mongoose
+      const user = await User.findByIdAndUpdate(userId, {
+        isDeleted: true,
+      });
+
+      if (!user) {
+        throw new HttpError(null, 404, "Utilisateur introuvable.");
+      }
+
+      return user;
+    } catch (error) {
+      if (error instanceof HttpError) {
+        throw error; // Renvoie l'erreur HTTP personnalisée
+      } else {
+        throw new HttpError(error, 500, "Erreur interne du serveur."); // Par défaut, renvoie 500 pour les erreurs inattendues
+      }
+    }
+  }
+
+  static async getUserByEmail(userEmail) {
+    try {
+      const user = await User.findOne({ email: userEmail });
+
+      if (!user) {
+        throw new HttpError(null, 404, "Utilisateur introuvable.");
+      }
+
+      return user;
+    } catch (error) {
+      if (error instanceof HttpError) {
+        throw error;
+      } else {
+        throw new HttpError(error, 500, "Erreur interne du serveur.");
+      }
+    }
+  }
+
+  static async getUserByPhone(userPhone) {
+    try {
+      const user = await User.findOne({ phone: userPhone });
+
+      if (!user) {
+        throw new HttpError(null, 404, "Utilisateur introuvable.");
+      }
+
+      return user;
+    } catch (error) {
+      if (error instanceof HttpError) {
+        throw error;
+      } else {
+        throw new HttpError(error, 500, "Erreur interne du serveur.");
+      }
+    }
+  }
+
+  static async getAllUsers() {
+    try {
+      const users = await User.find();
+
+      if (users.length === 0) {
+        throw new HttpError(null, 404, "Aucun utilisateur trouvé.");
+      }
+
+      return users;
+    } catch (error) {
+      if (error instanceof HttpError) {
+        throw error;
+      } else {
+        throw new HttpError(error, 500, "Erreur interne du serveur.");
+      }
     }
   }
 }

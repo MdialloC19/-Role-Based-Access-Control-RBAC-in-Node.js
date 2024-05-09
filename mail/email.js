@@ -51,12 +51,11 @@ const generateSecretEmail = (user, secret) => {
   return {
     from: EMAIL,
     to: user.email,
-    subject:
-      "[COMIT-CEE] Autorisation d'inscription à la plateforme Codification CEE",
+    subject: "[LAMBTECH] Autorisation d'inscription à la plateforme ",
     html: `
                         <html lang="fr-Fr">
                             <body>
-                                <div><h3>Autorisation d'inscription à la plateforme Codification CEE</h3></div>
+                                <div><h3>Autorisation d'inscription à la plateforme</h3></div>
                                 <p>Bienvenue ${user.prenom} ${user.nom},</p>
                                 <p>Vous êtes autorisé à créer votre compte sur la plateforme de codification du CEE.</p>
                                 <p><strong>Note :</strong> Ce code secret est personnel et doit être gardé en sécurité. Il sera utilisé uniquement lors de la création de compte ou du changement de mot de passe.</p>
@@ -81,7 +80,7 @@ const generateSecretResetEmail = (user, secret) => {
     from: EMAIL,
     to: user.email,
     subject:
-      "[COMIT-CEE] Réinitialisation du code secret personnel sur la plateforme Codification CEE",
+      "[LAMBTECH] Réinitialisation du code secret personnel sur la plateforme Codification CEE",
     html: `
                         <html lang="fr-Fr">
                             <body>
@@ -109,13 +108,17 @@ const generateEmailOptions = (user, otp) => {
   return {
     from: EMAIL,
     to: user.email,
-    subject: "[COMIT-CEE] Vérifiez votre email",
+    subject: "[LAMBTECH] Vérifiez votre email",
     html: `
                         <html lang="fr-Fr">
                             <body>
                                 <div><h3>Vérifiez votre adresse email </h3></div>
                                 <p>Bonjour ${user.prenom} ${user.nom},</p>
-                                 <p>Merci d'avoir démarré le processus de vérification de compte Codification CEE. Nous voulons nous assurer qu'il s'agit vraiment de vous. Veuillez saisir le code de vérification suivant lorsque vous y êtes invité. Si vous ne souhaitez pas créer de compte ou changer de mot de passe, vous pouvez ignorer ce message.</p>
+                                 <p>Merci d'avoir démarré le processus de vérification de compte .
+                                Nous voulons nous assurer qu'il s'agit vraiment de vous.
+                                Veuillez saisir le code de vérification suivant lorsque vous y êtes invité.
+                                Si vous ne souhaitez pas créer de compte ou changer de mot de passe, vous pouvez ignorer ce message.
+                                </p>
                                 <div><h4 style="text-align: center">Code de vérification</h4></div>
                                 <div><h1 style="text-align: center">${otp}</h1></div>
                                 <p style="text-align: center">(Ce code expire dans 10 minutes.)</p>

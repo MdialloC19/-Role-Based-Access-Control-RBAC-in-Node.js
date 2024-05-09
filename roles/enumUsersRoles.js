@@ -1,9 +1,9 @@
 const enumUsersRoles = {
-  STUDENT: "student",
-  TEACHER: "teacher",
-  ADMIN: "admin",
-  EDITOR: "editor",
-  SUPERADMIN: "superadmin",
+  STUDENT: "STUDENT",
+  TEACHER: "TEACHER",
+  ADMIN: "ADMIN",
+  EDITOR: "EDITOR",
+  SUPERADMIN: "SUPERADMIN",
 };
 
 module.exports = enumUsersRoles;
