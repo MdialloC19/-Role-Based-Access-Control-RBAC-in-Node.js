@@ -57,13 +57,13 @@ const generateSecretEmail = (user, secret) => {
                             <body>
                                 <div><h3>Autorisation d'inscription à la plateforme</h3></div>
                                 <p>Bienvenue ${user.prenom} ${user.nom},</p>
-                                <p>Vous êtes autorisé à créer votre compte sur la plateforme de codification du CEE.</p>
+                                <p>Vous êtes autorisé à créer votre compte sur la plateforme.</p>
                                 <p><strong>Note :</strong> Ce code secret est personnel et doit être gardé en sécurité. Il sera utilisé uniquement lors de la création de compte ou du changement de mot de passe.</p>
                                 <div><h4 style="text-align: center">Code secret personnel</h4></div>
                                 <div><h1 style="text-align: center">${secret}</h1></div>
                                 <p style="text-align: center">(Ce code peut être régénéré par l'administrateur en cas de besoin.)</p>
                                 <p>Rendez-vous sur la plateforme pour commencer votre expérience de codification.</p>
-                                <a href="${REMOTE_CLIENT}/signup/verifyIdentity" >Codication.cee-esp.sn</a>
+                                <a href="${REMOTE_CLIENT}/signup/verifyIdentity" >LambTech.sn</a>
                             </body>
                         </html>`,
   };
@@ -80,19 +80,19 @@ const generateSecretResetEmail = (user, secret) => {
     from: EMAIL,
     to: user.email,
     subject:
-      "[LAMBTECH] Réinitialisation du code secret personnel sur la plateforme Codification CEE",
+      "[LAMBTECH] Réinitialisation du code secret personnel sur la plateformeE",
     html: `
                         <html lang="fr-Fr">
                             <body>
-                                <div><h3>Réinitialisation du code secret personnel sur la plateforme Codification CEE</h3></div>
+                                <div><h3>Réinitialisation du code secret personnel sur la plateforme</h3></div>
                                 <p>Bonjour ${user.prenom} ${user.nom},</p>
-                                <p>Votre code secret personnel sur la plateforme de codification du CEE a été réinitialisé.</p>
+                                <p>Votre code secret personnel sur la plateforme a été réinitialisé.</p>
                                 <p><strong>Note :</strong> Ce code secret est personnel et doit être gardé en sécurité. Il sera utilisé uniquement lors de la réinitialisation de votre mot de passe.</p>
                                 <div><h4 style="text-align: center">Code secret personel</h4></div>
                                 <div><h1 style="text-align: center">${secret}</h1></div>
                                 <p style="text-align: center">(Ce code peut être régénéré par l'administrateur en cas de besoin.)</p>
                                 <p>Rendez-vous sur la plateforme pour réinitialiser votre mot de passe.</p>
-                                <a href="${REMOTE_CLIENT}/signup/verifyIdentity" >Codication.cee-esp.sn</a>
+                                <a href="${REMOTE_CLIENT}/signup/verifyIdentity" >Lamtech.sn</a>
                             </body>
                         </html>`,
   };

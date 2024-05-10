@@ -16,6 +16,11 @@ const {
   sendVerificationEmail,
 } = require("../mail/email");
 
+const isValidEmail = (email) => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
 async function hashSecret(secret) {
   return bcrypt.hash(secret, 10);
 }
@@ -263,6 +268,24 @@ class UserService {
         throw new HttpError(error, 500, "Erreur interne du serveur."); // Par défaut, renvoie 500 pour les erreurs inattendues
       }
     }
+  }
+
+  static async updateUserConfirmationStatus(identifiant) {
+    let user;
+
+    if (isValidEmail(identifiant)) {
+      user = await UserService.getUserByEmail(identifiant);
+    } else if (isValidPhoneNumber(identifiant)) {
+      user = await UserService.getUserByPhone(identifiant);
+    } else {
+      user = await UserService.getUserById(identifiant);
+    }
+
+    if (!user) {
+      throw createNotFoundError("User", "L'utilisateur n'est pas trouvé !");
+    }
+
+    await user.updateOne({ $set: { confirmed: true } });
   }
 
   /**
