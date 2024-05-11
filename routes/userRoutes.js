@@ -3,6 +3,7 @@ const express = require("express");
 const user = require("../controllers/userController.js");
 const router = express.Router();
 
+const allowIfLoggedin = require("../middlewares/allowIfLoggedin");
 router.get("/", (req, res) => {
   res.json({ message: "Welcome to the authentication." });
 });
@@ -23,5 +24,7 @@ router.post(
  * @access Private available for Admin
  */
 router.post("/login" /*, middleware.validateLogin*/, user.userLoginUser);
+
+router.put("/resetSecret/:id", allowIfLoggedin, user.resetSecret);
 
 module.exports = router;

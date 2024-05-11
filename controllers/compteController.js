@@ -3,6 +3,10 @@ const Compte = require("../models/compte");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const UserService = require("../services/user.services");
+const {
+  createValidationError,
+  createNotFoundError,
+} = require("../utils/errorshandler");
 
 const {
   otpData,
@@ -40,6 +44,7 @@ const createToken = (id, role) => {
   });
 };
 
+console.log(JWT_SECRET, JWT_EXPIRES_IN);
 /**
  * Compare le mot de passe soumis avec le mot de passe hashé.
  * @param {string} password Mot de passe soumis.
@@ -183,7 +188,7 @@ module.exports = class CompteController {
 
       await CompteService.updateCompte({ password: newPassword }, compte._id);
 
-      const token = createToken(user._id);
+      const token = createToken(user._id, user.role);
       const userObject = user.toObject();
       return res.status(200).json({
         user: {
@@ -236,7 +241,7 @@ module.exports = class CompteController {
         );
       }
 
-      const token = createToken(user._id);
+      const token = createToken(user._id, user.role);
       const userObject = user.toObject();
 
       res.status(200).json({
@@ -247,6 +252,25 @@ module.exports = class CompteController {
       });
     } catch (error) {
       next(error);
+    }
+  }
+
+  /**
+   * Récupère le compte de l'utilisateur en fonction de son numéro de carte.
+   * @param {Object} req Objet de requête Express.
+   * @param {Object} res Objet de réponse Express.
+   */
+  async getCompte(req, res) {
+    const id = req.params.id;
+    try {
+      if (id != null) {
+        const compte = await CompteService.getCompteById(id);
+        return res.json({ code: 200, compte: compte, user: user });
+      } else {
+        return res.json({ code: 500, msg: "l'utilisateur n'a pas de compte" });
+      }
+    } catch (err) {
+      return res.json({ code: 500, msg: err.message });
     }
   }
 };

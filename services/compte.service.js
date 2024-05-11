@@ -1,6 +1,10 @@
 const UserService = require("./user.services");
 const bcrypt = require("bcryptjs");
 const Compte = require("../models/compte");
+const {
+  createValidationError,
+  createNotFoundError,
+} = require("../utils/errorshandler");
 
 const isValidEmail = (email) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

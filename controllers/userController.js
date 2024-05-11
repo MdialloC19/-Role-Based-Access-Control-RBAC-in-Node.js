@@ -1,6 +1,6 @@
 const UserService = require("../services/user.services");
 const { HttpError } = require("../utils/exceptions");
-
+const { enumUsersRoles } = require("../models/user");
 /**
  * Enregistre un nouvel utilisateur
  * @param {import('express').Request} req - Requête Express
@@ -61,19 +61,21 @@ const resetSecret = async (req, res, next) => {
         "Veuillez fournir l'identifiant de l'utilisateur."
       );
     }
-    const user = await User.findById(id);
+    const user = await UserService.getUserById(id);
     if (!user) {
       throw createNotFoundError("User", `Utilisateur introuvable`);
     }
 
-    if (userRole.STUDENT !== user.role) {
+    if (enumUsersRoles.STUDENT !== user.role) {
+      // Utilisation de enumUsersRoles au lieu de userRole
       throw createNotFoundError(
         "User",
         "Le rôle de l'utilisateur n'est pas connu."
       );
     }
 
-    if (res.locals.loggedInUser.role !== userRole.ADMIN) {
+    if (res.locals.loggedInUser.role !== enumUsersRoles.STUDENT) {
+      // Utilisation de enumUsersRoles au lieu de userRole
       throw createNotFoundError(
         "User",
         "Vous n'êtes pas autorisé à réinitialiser le secret."
@@ -83,11 +85,9 @@ const resetSecret = async (req, res, next) => {
     const secret = generateOTP();
     const hashedSecret = await hashSecret(secret);
 
-    const updatedUser = await User.findByIdAndUpdate(
-      user._id,
-      { secret: hashedSecret },
-      { new: true }
-    );
+    const updatedUser = await UserService.updateUserById(user._id, {
+      secret: hashedSecret,
+    });
     const emailOptions = generateSecretResetEmail(updatedUser, secret);
     await sendVerificationEmail(emailOptions);
 
@@ -100,4 +100,5 @@ const resetSecret = async (req, res, next) => {
 module.exports = {
   userRegisterUser,
   userLoginUser,
+  resetSecret,
 };

@@ -3,7 +3,7 @@ const http = require("http");
 const bodyParser = require("body-parser");
 const cors = require("cors");
 const helmet = require("helmet");
-
+const authenticateToken = require("./middlewares/authenticateToken");
 // const socketConfig = require("../config/socket.config.js");
 const routes = require("./routes/index.routes.js");
 // const socketMiddleware = require("./middlewares/socket.middleware.js");
@@ -19,7 +19,7 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(helmet());
-
+app.use(authenticateToken);
 app.use("/api/v1", routes);
 // welcome message
 app.get("/", (req, res) => {

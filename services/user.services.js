@@ -1,4 +1,5 @@
-const User = require("../models/User");
+const User = require("../models/user"); // Importez User une seule fois
+
 const { HttpError } = require("../utils/exceptions");
 const integretyTester = require("../utils/integrety.utils");
 const { validationResult } = require("express-validator");
@@ -215,6 +216,84 @@ class UserService {
   }
 
   /**
+   * Récupère un utilisateur existant par ID.
+   * @param {string} userId - ID de l'utilisateur à récupérer.
+   * @returns {Promise<Object>} - Promesse résolue avec l'utilisateur récupéré.
+   * @throws {HttpError} - Lance une erreur HTTP personnalisée si la récupération de l'utilisateur échoue.
+   */
+  static async getUserById(userId) {
+    try {
+      // Trouve l'utilisateur par ID en utilisant le modèle Mongoose
+      const user = await User.findById(userId);
+
+      if (!user) {
+        throw new HttpError(error, 404, "Utilisateur introuvable.");
+      }
+
+      return user;
+    } catch (error) {
+      if (error instanceof HttpError) {
+        throw error; // Renvoie l'erreur HTTP personnalisée
+      } else {
+        throw new HttpError(error, 500, "Erreur interne du serveur."); // Par défaut, renvoie 500 pour les erreurs inattendues
+      }
+    }
+  }
+
+  static async getUserByEmail(userEmail) {
+    try {
+      const user = await User.findOne({ email: userEmail });
+
+      if (!user) {
+        throw new HttpError(null, 404, "Utilisateur introuvable.");
+      }
+
+      return user;
+    } catch (error) {
+      if (error instanceof HttpError) {
+        throw error;
+      } else {
+        throw new HttpError(error, 500, "Erreur interne du serveur.");
+      }
+    }
+  }
+
+  static async getUserByPhone(userPhone) {
+    try {
+      const user = await User.findOne({ phone: userPhone });
+
+      if (!user) {
+        throw new HttpError(null, 404, "Utilisateur introuvable.");
+      }
+
+      return user;
+    } catch (error) {
+      if (error instanceof HttpError) {
+        throw error;
+      } else {
+        throw new HttpError(error, 500, "Erreur interne du serveur.");
+      }
+    }
+  }
+
+  static async getAllUsers() {
+    try {
+      const users = await User.find();
+
+      if (users.length === 0) {
+        throw new HttpError(null, 404, "Aucun utilisateur trouvé.");
+      }
+
+      return users;
+    } catch (error) {
+      if (error instanceof HttpError) {
+        throw error;
+      } else {
+        throw new HttpError(error, 500, "Erreur interne du serveur.");
+      }
+    }
+  }
+  /**
    * Met à jour un utilisateur existant par ID.
    * @param {string} userId - ID de l'utilisateur à mettre à jour.
    * @param {Object} updatedUserData - Données mises à jour pour l'utilisateur.
@@ -311,60 +390,6 @@ class UserService {
         throw error; // Renvoie l'erreur HTTP personnalisée
       } else {
         throw new HttpError(error, 500, "Erreur interne du serveur."); // Par défaut, renvoie 500 pour les erreurs inattendues
-      }
-    }
-  }
-
-  static async getUserByEmail(userEmail) {
-    try {
-      const user = await User.findOne({ email: userEmail });
-
-      if (!user) {
-        throw new HttpError(null, 404, "Utilisateur introuvable.");
-      }
-
-      return user;
-    } catch (error) {
-      if (error instanceof HttpError) {
-        throw error;
-      } else {
-        throw new HttpError(error, 500, "Erreur interne du serveur.");
-      }
-    }
-  }
-
-  static async getUserByPhone(userPhone) {
-    try {
-      const user = await User.findOne({ phone: userPhone });
-
-      if (!user) {
-        throw new HttpError(null, 404, "Utilisateur introuvable.");
-      }
-
-      return user;
-    } catch (error) {
-      if (error instanceof HttpError) {
-        throw error;
-      } else {
-        throw new HttpError(error, 500, "Erreur interne du serveur.");
-      }
-    }
-  }
-
-  static async getAllUsers() {
-    try {
-      const users = await User.find();
-
-      if (users.length === 0) {
-        throw new HttpError(null, 404, "Aucun utilisateur trouvé.");
-      }
-
-      return users;
-    } catch (error) {
-      if (error instanceof HttpError) {
-        throw error;
-      } else {
-        throw new HttpError(error, 500, "Erreur interne du serveur.");
       }
     }
   }
