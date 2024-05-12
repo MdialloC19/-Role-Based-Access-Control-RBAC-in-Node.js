@@ -275,6 +275,23 @@ class UserService {
       }
     }
   }
+  static async getUserByCompte(compteId) {
+    try {
+      const user = await User.findOne({ compte: compteId });
+
+      if (!user) {
+        throw new HttpError(null, 404, "Utilisateur introuvable.");
+      }
+
+      return user;
+    } catch (error) {
+      if (error instanceof HttpError) {
+        throw error;
+      } else {
+        throw new HttpError(error, 500, "Erreur interne du serveur.");
+      }
+    }
+  }
 
   static async getAllUsers() {
     try {
@@ -303,10 +320,10 @@ class UserService {
   static async updateUserById(userId, updatedUserData) {
     try {
       // Valider les données de l'utilisateur mises à jour
-      const validatedUserData = UserService.validateUserData(updatedUserData);
+      // const validatedUserData = UserService.validateUserData(updatedUserData);
 
       // Mettre à jour l'utilisateur en utilisant le modèle Mongoose
-      const user = await User.findByIdAndUpdate(userId, validatedUserData, {
+      const user = await User.findByIdAndUpdate(userId, updatedUserData, {
         new: true,
       });
 

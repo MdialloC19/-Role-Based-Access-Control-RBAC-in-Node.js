@@ -1,13 +1,28 @@
 const UserService = require("../services/user.services");
 const { HttpError } = require("../utils/exceptions");
-const { enumUsersRoles } = require("../models/user");
+const enumUsersRoles = require("../roles/enumUsersRoles");
+const {
+  createValidationError,
+  createNotFoundError,
+} = require("../utils/errorshandler");
+const {
+  otpData,
+  tokenData,
+  generateOTP,
+  generateEmailOptions,
+  sendVerificationEmail,
+  generateSecretResetEmail,
+} = require("../mail/email");
 /**
  * Enregistre un nouvel utilisateur
  * @param {import('express').Request} req - Requête Express
  * @param {import('express').Response} res - Réponse Express
  * @returns {Promise<void>} - Promesse indiquant la fin du traitement
  */
-
+async function hashSecret(secret) {
+  return bcrypt.hash(secret, 10);
+}
+const bcrypt = require("bcryptjs");
 const userRegisterUser = async (req, res) => {
   try {
     const registerUser = await UserService.createUser(req.body);
@@ -61,12 +76,12 @@ const resetSecret = async (req, res, next) => {
         "Veuillez fournir l'identifiant de l'utilisateur."
       );
     }
-    const user = await UserService.getUserById(id);
+    const user = await UserService.getUserByCompte(id);
     if (!user) {
       throw createNotFoundError("User", `Utilisateur introuvable`);
     }
 
-    if (enumUsersRoles.STUDENT !== user.role) {
+    if (enumUsersRoles.TEACHER !== user.role) {
       // Utilisation de enumUsersRoles au lieu de userRole
       throw createNotFoundError(
         "User",
@@ -74,7 +89,7 @@ const resetSecret = async (req, res, next) => {
       );
     }
 
-    if (res.locals.loggedInUser.role !== enumUsersRoles.STUDENT) {
+    if (res.locals.loggedInUser.role !== enumUsersRoles.TEACHER) {
       // Utilisation de enumUsersRoles au lieu de userRole
       throw createNotFoundError(
         "User",
