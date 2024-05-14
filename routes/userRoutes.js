@@ -2,8 +2,9 @@ const express = require("express");
 // import middleware from "../middlewares/auth.middleware.js";
 const user = require("../controllers/userController.js");
 const router = express.Router();
-
 const allowIfLoggedin = require("../middlewares/allowIfLoggedin");
+const grantAccess = require("../middlewares/grandAccess/userAccess");
+const defineUserRoles = require("../roles/usersRoles");
 router.get("/", (req, res) => {
   res.json({ message: "Welcome to the authentication." });
 });
@@ -25,6 +26,11 @@ router.post(
  */
 router.post("/login" /*, middleware.validateLogin*/, user.userLoginUser);
 
-router.put("/resetSecret/:id", allowIfLoggedin, user.resetSecret);
+router.put(
+  "/resetSecret/:id",
+  allowIfLoggedin,
+  grantAccess(defineUserRoles, "readAny", "user"),
+  user.resetSecret
+);
 
 module.exports = router;

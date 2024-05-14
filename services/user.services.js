@@ -123,7 +123,7 @@ class UserService {
 
     if (
       role &&
-      !["STUDENT", "TEACHER", "ADMIN", "SUPERADMIN"].includes(
+      !["STUDENT", "TEACHER", "ADMIN", "SUPERADMIN", "EDITOR"].includes(
         role.toUpperCase()
       )
     ) {

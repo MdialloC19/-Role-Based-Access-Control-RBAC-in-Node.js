@@ -3,17 +3,22 @@ const enumUsersRoles = require("./enumUsersRoles");
 const ac = new AccessControl();
 
 exports.defineUserRoles = (function () {
-  ac.grant(enumUsersRoles.STUDENT).readOwn("profile").updateOwn("profile");
+  ac.grant(enumUsersRoles.STUDENT)
+    .readOwn("compte")
+    .updateOwn("compte")
+    .readOwn("user")
+    .updateOwn("user");
 
   ac.grant(enumUsersRoles.EDITOR)
     .extend(enumUsersRoles.STUDENT)
-    .readAny("profile");
+    .readAny("compte")
+    .readAny("user")
+    .updateAny("user");
 
   ac.grant(enumUsersRoles.ADMIN)
     .extend([enumUsersRoles.STUDENT, enumUsersRoles.EDITOR])
-    .createAny("profile")
-    .updateAny("profile")
-    .deleteAny("profile");
+    .deleteAny("user")
+    .deleteAny("compte");
 
   return ac;
 })();

@@ -16,6 +16,11 @@ const authenticateToken = async (req, res, next) => {
         });
       }
       const user = await User.findById(userId);
+      if (user.compte == null) {
+        return res.statud(400).json({
+          error: "User you don't have Account",
+        });
+      }
       res.locals.loggedInUser = user;
       next();
     } else {

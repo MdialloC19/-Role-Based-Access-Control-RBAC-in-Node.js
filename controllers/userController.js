@@ -81,15 +81,14 @@ const resetSecret = async (req, res, next) => {
       throw createNotFoundError("User", `Utilisateur introuvable`);
     }
 
-    if (enumUsersRoles.TEACHER !== user.role) {
-      // Utilisation de enumUsersRoles au lieu de userRole
+    if (!Object.values(enumUsersRoles).includes(user.role)) {
       throw createNotFoundError(
         "User",
         "Le rôle de l'utilisateur n'est pas connu."
       );
     }
 
-    if (res.locals.loggedInUser.role !== enumUsersRoles.TEACHER) {
+    if (res.locals.loggedInUser.role !== user.role) {
       // Utilisation de enumUsersRoles au lieu de userRole
       throw createNotFoundError(
         "User",
