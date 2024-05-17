@@ -71,7 +71,7 @@ module.exports = class CompteController {
       }
       console.log(userRole, user.role);
 
-      if (user.role === userRole.STUDENT) {
+      if (user.role === userRole.STUDENT || user.role === userRole.ADMIN) {
         if (user.secret) {
           return res.json({
             code: 200,
@@ -113,7 +113,9 @@ module.exports = class CompteController {
       const user = await UserService.getUserByEmail(email);
       if (
         user &&
-        (user.role === userRole.STUDENT || user.role === userRole.TEACHER)
+        (user.role === userRole.ADMIN ||
+          user.role === userRole.STUDENT ||
+          user.role === userRole.TEACHER)
       ) {
         const valid = await comparePassword(otp, user.secret);
         if (!valid) {
